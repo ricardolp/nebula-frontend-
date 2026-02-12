@@ -12,7 +12,7 @@ import { varAlpha } from 'src/theme/styles';
 import { Iconify } from 'src/components/iconify';
 import { AnimateAvatar } from 'src/components/animate';
 
-import { useMockedUser } from 'src/auth/hooks';
+import { useAuthContext } from 'src/auth/hooks';
 
 import { AccountButton } from './account-button';
 import { SignOutButton } from './sign-out-button';
@@ -21,7 +21,10 @@ import { SignOutButton } from './sign-out-button';
 
 export function AccountDrawer({ sx, ...other }) {
   const theme = useTheme();
-  const { user } = useMockedUser();
+  const { user } = useAuthContext();
+  const displayName = user?.displayName ?? user?.name ?? '';
+  const photoURL = user?.photoURL ?? user?.avatar ?? null;
+  const email = user?.email ?? '';
 
   const [open, setOpen] = useState(false);
 
@@ -37,7 +40,7 @@ export function AccountDrawer({ sx, ...other }) {
     <AnimateAvatar
       width={96}
       slotProps={{
-        avatar: { src: user?.photoURL, alt: user?.displayName },
+        avatar: { src: photoURL, alt: displayName },
         overlay: {
           border: 2,
           spacing: 3,
@@ -45,7 +48,7 @@ export function AccountDrawer({ sx, ...other }) {
         },
       }}
     >
-      {user?.displayName?.charAt(0).toUpperCase()}
+      {displayName?.charAt(0).toUpperCase()}
     </AnimateAvatar>
   );
 
@@ -54,8 +57,8 @@ export function AccountDrawer({ sx, ...other }) {
       <AccountButton
         open={open}
         onClick={handleOpenDrawer}
-        photoURL={user?.photoURL}
-        displayName={user?.displayName}
+        photoURL={photoURL}
+        displayName={displayName}
         sx={sx}
         {...other}
       />
@@ -78,11 +81,11 @@ export function AccountDrawer({ sx, ...other }) {
           {renderAvatar}
 
           <Typography variant="subtitle1" noWrap sx={{ mt: 2 }}>
-            {user?.displayName}
+            {displayName}
           </Typography>
 
           <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }} noWrap>
-            {user?.email}
+            {email}
           </Typography>
         </Stack>
 

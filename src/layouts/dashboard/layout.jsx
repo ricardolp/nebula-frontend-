@@ -8,7 +8,7 @@ import { useBoolean } from 'src/hooks/use-boolean';
 import { useAuthContext } from 'src/auth/hooks';
 
 import { allLangs } from 'src/locales';
-import { _contacts, _notifications } from 'src/_mock';
+import { _notifications } from 'src/_mock';
 import { varAlpha, stylesMode } from 'src/theme/styles';
 import { CONFIG } from 'src/config-global';
 
@@ -84,7 +84,6 @@ export function DashboardLayout({ sx, children, data }) {
               nav: navData,
               langs: allLangs,
               account: _account,
-              contacts: _contacts,
               workspaces,
               notifications: _notifications,
             }}
