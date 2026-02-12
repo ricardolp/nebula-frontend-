@@ -1,4 +1,5 @@
 import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
 import Step from '@mui/material/Step';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
@@ -86,8 +87,9 @@ function OptionCard({ name, value, label, description, icon, color }) {
       variant="outlined"
       sx={{
         flex: 1,
-        minWidth: 120,
-        maxWidth: 200,
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column',
         borderWidth: 2,
         borderColor: isSelected ? `${color}.main` : 'divider',
         bgcolor: isSelected ? (theme) => alpha(theme.palette[color].main, 0.08) : 'background.paper',
@@ -102,13 +104,14 @@ function OptionCard({ name, value, label, description, icon, color }) {
         },
       }}
     >
-      <CardActionArea onClick={handleClick} sx={{ p: 2, height: '100%' }}>
-        <Stack spacing={1} alignItems="center" sx={{ textAlign: 'center' }}>
+      <CardActionArea onClick={handleClick} sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Stack spacing={1} alignItems="center" justifyContent="center" sx={{ textAlign: 'center', minHeight: 100, flex: 1 }}>
           <Box
             sx={{
               width: 48,
               height: 48,
               borderRadius: 2,
+              flexShrink: 0,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -155,11 +158,13 @@ export function StepType() {
       <Typography variant="subtitle1" fontWeight={600}>
         Como essa integração se comporta?
       </Typography>
-      <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+      <Grid container spacing={2} sx={{ alignItems: 'stretch' }}>
         {TYPES.map((opt) => (
-          <OptionCard key={opt.value} name="type" {...opt} />
+          <Grid item xs={12} sm={6} key={opt.value} sx={{ display: 'flex' }}>
+            <OptionCard name="type" {...opt} />
+          </Grid>
         ))}
-      </Stack>
+      </Grid>
     </Stack>
   );
 }
@@ -196,11 +201,13 @@ export function StepProcess() {
       <Typography variant="subtitle1" fontWeight={600}>
         Qual tipo de processo essa integração atende?
       </Typography>
-      <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+      <Grid container spacing={2} sx={{ alignItems: 'stretch' }}>
         {PROCESSES.map((opt) => (
-          <OptionCard key={opt.value} name="process" {...opt} />
+          <Grid item xs={12} sm={4} key={opt.value} sx={{ display: 'flex' }}>
+            <OptionCard name="process" {...opt} />
+          </Grid>
         ))}
-      </Stack>
+      </Grid>
     </Stack>
   );
 }
@@ -251,11 +258,13 @@ export function StepAuth() {
       <Typography variant="subtitle1" fontWeight={600}>
         Como a API exige autenticação?
       </Typography>
-      <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
+      <Grid container spacing={2} sx={{ alignItems: 'stretch' }}>
         {AUTH_TYPES.map((opt) => (
-          <OptionCard key={opt.value} name="authType" {...opt} />
+          <Grid item xs={12} sm={6} md={4} key={opt.value} sx={{ display: 'flex' }}>
+            <OptionCard name="authType" {...opt} />
+          </Grid>
         ))}
-      </Stack>
+      </Grid>
     </Stack>
   );
 }

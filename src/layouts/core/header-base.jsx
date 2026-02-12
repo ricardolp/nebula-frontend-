@@ -14,6 +14,7 @@ import { AccountDrawer } from '../components/account-drawer';
 import { LanguagePopover } from '../components/language-popover';
 import { WorkspacesPopover } from '../components/workspaces-popover';
 import { NotificationsDrawer } from '../components/notifications-drawer';
+import { ThemeToggle } from '../components/theme-toggle';
 
 // ----------------------------------------------------------------------
 
@@ -61,6 +62,7 @@ export function HeaderBase({
     menuButton = true,
     localization = true,
     notifications = true,
+    themeToggle = true,
   } = {},
 
   ...other
@@ -125,6 +127,9 @@ export function HeaderBase({
               {notifications && (
                 <NotificationsDrawer data-slot="notifications" data={data?.notifications} />
               )}
+
+              {/* -- Theme toggle (light/dark) -- */}
+              {themeToggle && <ThemeToggle data-slot="theme-toggle" />}
 
               {/* -- Account drawer -- */}
               {account && <AccountDrawer data-slot="account" data={data?.account} />}

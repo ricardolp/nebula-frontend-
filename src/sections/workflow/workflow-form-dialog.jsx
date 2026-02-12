@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Card from '@mui/material/Card';
 import Dialog from '@mui/material/Dialog';
@@ -66,8 +67,9 @@ function OptionCard({ value, selected, label, description, icon, color, onClick 
       variant="outlined"
       sx={{
         flex: 1,
-        minWidth: 140,
-        maxWidth: 220,
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column',
         borderWidth: 2,
         borderColor: selected ? `${color}.main` : 'divider',
         bgcolor: selected ? (theme) => alpha(theme.palette[color].main, 0.08) : 'background.paper',
@@ -82,13 +84,14 @@ function OptionCard({ value, selected, label, description, icon, color, onClick 
         },
       }}
     >
-      <CardActionArea onClick={() => onClick(value)} sx={{ p: 2, height: '100%' }}>
-        <Stack spacing={1} alignItems="center" sx={{ textAlign: 'center' }}>
+      <CardActionArea onClick={() => onClick(value)} sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Stack spacing={1} alignItems="center" justifyContent="center" sx={{ textAlign: 'center', minHeight: 100, flex: 1 }}>
           <Box
             sx={{
               width: 48,
               height: 48,
               borderRadius: 2,
+              flexShrink: 0,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -229,17 +232,18 @@ export function WorkflowFormDialog({ open, onClose, organizationId, onSuccess })
             <Typography variant="subtitle1" fontWeight={600}>
               Qual tipo de entidade este workflow atende?
             </Typography>
-            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+            <Grid container spacing={2} sx={{ alignItems: 'stretch' }}>
               {TYPE_OPTIONS.map((opt) => (
-                <OptionCard
-                  key={opt.value}
-                  value={opt.value}
-                  selected={type === opt.value}
-                  onClick={setType}
-                  {...opt}
-                />
+                <Grid item xs={12} sm={6} key={opt.value} sx={{ display: 'flex' }}>
+                  <OptionCard
+                    value={opt.value}
+                    selected={type === opt.value}
+                    onClick={setType}
+                    {...opt}
+                  />
+                </Grid>
               ))}
-            </Stack>
+            </Grid>
           </Stack>
         )}
 
@@ -249,17 +253,18 @@ export function WorkflowFormDialog({ open, onClose, organizationId, onSuccess })
               <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1.5 }}>
                 Qual a ação do workflow?
               </Typography>
-              <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+              <Grid container spacing={2} sx={{ alignItems: 'stretch' }}>
                 {ACTION_OPTIONS.map((opt) => (
-                  <OptionCard
-                    key={opt.value}
-                    value={opt.value}
-                    selected={action === opt.value}
-                    onClick={setAction}
-                    {...opt}
-                  />
+                  <Grid item xs={12} sm={6} key={opt.value} sx={{ display: 'flex' }}>
+                    <OptionCard
+                      value={opt.value}
+                      selected={action === opt.value}
+                      onClick={setAction}
+                      {...opt}
+                    />
+                  </Grid>
                 ))}
-              </Stack>
+              </Grid>
             </Box>
 
             <TextField
