@@ -52,7 +52,8 @@ export function LanguagePopover({ data = [], sx, ...other }) {
             <MenuItem
               key={option.value}
               selected={option.value === currentLang.value}
-              onClick={() => handleChangeLang(option.value)}
+              disabled={option.disabled}
+              onClick={() => !option.disabled && handleChangeLang(option.value)}
             >
               <FlagIcon code={option.countryCode} />
               {option.label}

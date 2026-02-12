@@ -49,10 +49,27 @@ export const navData = [
     ],
   },
   /**
+   * Central de Cadastros
+   */
+  {
+    subheader: 'Central de Cadastros',
+    items: [
+      {
+        title: 'Business Partner',
+        path: paths.dashboard.businessPartners.root,
+        icon: ICONS.user,
+        children: [
+          { title: 'Listagem', path: paths.dashboard.businessPartners.root },
+          { title: 'Formulário completo', path: paths.dashboard.businessPartners.new },
+        ],
+      },
+    ],
+  },
+  /**
    * Management
    */
   {
-    subheader: 'Gerênciar',
+    subheader: 'Gerenciar',
     items: [
       {
         title: 'Acessos',
@@ -70,20 +87,11 @@ export const navData = [
         icon: ICONS.external,
       },
       {
-        title: 'Business Partner',
-        path: paths.dashboard.businessPartners.root,
-        icon: ICONS.user,
-        children: [
-          { title: 'Listagem', path: paths.dashboard.businessPartners.root },
-          { title: 'Formulário completo', path: paths.dashboard.businessPartners.new },
-        ],
-      },
-      {
         title: 'Workflows',
         path: paths.dashboard.workflows.root,
         icon: ICONS.external,
         children: [
-          { title: 'Gerênciar', path: paths.dashboard.workflows.root },
+          { title: 'Gerenciar', path: paths.dashboard.workflows.root },
           { title: 'Formulários', path: paths.dashboard.forms.root },
           { title: 'SLAs', path: paths.dashboard.workflowSlas.root },
         ],
