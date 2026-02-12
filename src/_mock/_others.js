@@ -52,51 +52,27 @@ export const _contacts = [...Array(20)].map((_, index) => {
 
 // ----------------------------------------------------------------------
 
-export const _notifications = [...Array(9)].map((_, index) => ({
+// Tipos de notificação alinhados às entidades do sistema: workflow_request, form, workflow, app, domain, business_partner
+const NOTIFICATION_ENTITIES = [
+  { type: 'workflow_request', category: 'Solicitação', title: 'Nova solicitação de workflow aguardando aprovação' },
+  { type: 'workflow_request', category: 'Solicitação', title: 'Solicitação de material atualizada' },
+  { type: 'form', category: 'Formulário', title: 'Formulário publicado com sucesso' },
+  { type: 'workflow', category: 'Workflow', title: 'Workflow aprovado e ativo' },
+  { type: 'app', category: 'Integração', title: 'Integração configurada e sincronizando' },
+  { type: 'domain', category: 'Domínio', title: 'Domínio validado' },
+  { type: 'business_partner', category: 'Parceiro', title: 'Novo parceiro cadastrado' },
+  { type: 'workflow_request', category: 'SLA', title: 'Solicitação próxima do prazo de SLA' },
+  { type: 'form', category: 'Formulário', title: 'Alteração no formulário de parceiro' },
+];
+
+export const _notifications = NOTIFICATION_ENTITIES.map((entity, index) => ({
   id: _mock.id(index),
-  avatarUrl: [
-    _mock.image.avatar(1),
-    _mock.image.avatar(2),
-    _mock.image.avatar(3),
-    _mock.image.avatar(4),
-    _mock.image.avatar(5),
-    null,
-    null,
-    null,
-    null,
-    null,
-  ][index],
-  type: ['friend', 'project', 'file', 'tags', 'payment', 'order', 'chat', 'mail', 'delivery'][
-    index
-  ],
-  category: [
-    'Communication',
-    'Project UI',
-    'File manager',
-    'File manager',
-    'File manager',
-    'Order',
-    'Order',
-    'Communication',
-    'Communication',
-  ][index],
+  avatarUrl: index < 3 ? _mock.image.avatar(index + 1) : null,
+  type: entity.type,
+  category: entity.category,
   isUnRead: _mock.boolean(index),
   createdAt: _mock.time(index),
-  title:
-    (index === 0 && `<p><strong>Deja Brady</strong> sent you a friend request</p>`) ||
-    (index === 1 &&
-      `<p><strong>Jayvon Hull</strong> mentioned you in <strong><a href='#'>Minimal UI</a></strong></p>`) ||
-    (index === 2 &&
-      `<p><strong>Lainey Davidson</strong> added file to <strong><a href='#'>File manager</a></strong></p>`) ||
-    (index === 3 &&
-      `<p><strong>Angelique Morse</strong> added new tags to <strong><a href='#'>File manager<a/></strong></p>`) ||
-    (index === 4 &&
-      `<p><strong>Giana Brandt</strong> request a payment of <strong>$200</strong></p>`) ||
-    (index === 5 && `<p>Your order is placed waiting for shipping</p>`) ||
-    (index === 6 && `<p>Delivery processing your order is being shipped</p>`) ||
-    (index === 7 && `<p>You have new message 5 unread messages</p>`) ||
-    (index === 8 && `<p>You have new mail`) ||
-    '',
+  title: `<p>${entity.title}</p>`,
 }));
 
 // ----------------------------------------------------------------------

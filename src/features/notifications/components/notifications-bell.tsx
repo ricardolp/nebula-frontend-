@@ -45,14 +45,20 @@ export function NotificationsBell() {
     if (!notification.readAt) {
       markReadMutation.mutate(notification.id)
     }
-    if (
-      notification.relatedType === 'workflow_request' &&
-      notification.relatedId
-    ) {
-      navigate({
-        to: '/workflow-requests/$requestId',
-        params: { requestId: notification.relatedId },
-      })
+    if (!notification.relatedId) return
+    const { relatedType, relatedId } = notification
+    if (relatedType === 'workflow_request') {
+      navigate({ to: '/workflow-requests/$requestId', params: { requestId: relatedId } })
+    } else if (relatedType === 'form') {
+      navigate({ to: '/forms/$formId/edit', params: { formId: relatedId } })
+    } else if (relatedType === 'workflow') {
+      navigate({ to: '/workflows/$workflowId/edit', params: { workflowId: relatedId } })
+    } else if (relatedType === 'app' || relatedType === 'integration') {
+      navigate({ to: '/apps/$integrationId/mapping', params: { integrationId: relatedId } })
+    } else if (relatedType === 'domain') {
+      navigate({ to: '/domains/$tabela', params: { tabela: relatedId } })
+    } else if (relatedType === 'business_partner' || relatedType === 'partner') {
+      window.location.href = `/dashboard/business-partners/${relatedId}/edit`
     }
   }
 
