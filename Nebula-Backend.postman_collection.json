@@ -1,0 +1,1123 @@
+{
+  "info": {
+    "name": "Nebula Backend",
+    "description": "API Nebula. Respostas: sucesso { success: true, data?, message? }, erro { success: false, error: { code, message } }. Header Accept-Language (pt-BR, en).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "token", "value": "" },
+    { "key": "organizationId", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "roleId", "value": "" },
+    { "key": "integrationId", "value": "" },
+    { "key": "integrationLogId", "value": "" },
+    { "key": "domainId", "value": "" },
+    { "key": "formId", "value": "" },
+    { "key": "fieldId", "value": "" },
+    { "key": "workflowId", "value": "" },
+    { "key": "stepId", "value": "" },
+    { "key": "requestId", "value": "" },
+    { "key": "notificationId", "value": "" },
+    { "key": "inviteId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const res = pm.response.json();",
+                "const token = res.data?.token || res.token;",
+                "if (token) pm.collectionVariables.set('token', token);"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@nebula.dev\",\n  \"password\": \"admin123\"\n}" },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Me (usuário atual)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/auth/me"
+          }
+        },
+        {
+          "name": "Esqueci a senha",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@nebula.dev\"\n}" },
+            "url": "{{baseUrl}}/api/auth/forgot-password"
+          }
+        },
+        {
+          "name": "Reset de senha",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"COLE_O_TOKEN_DO_ESQUECI_SENHA_AQUI\",\n  \"password\": \"novaSenha123\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/reset-password"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/health"
+      }
+    },
+    {
+      "name": "3. Organizations",
+      "item": [
+        {
+          "name": "Listar organizações",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/organizations"
+          }
+        },
+        {
+          "name": "Criar organização",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const res = pm.response.json();",
+                "const id = res.data?.id;",
+                "if (id) pm.collectionVariables.set('organizationId', id);"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Minha Organização\",\n  \"slug\": \"minha-organizacao\"\n}" },
+            "url": "{{baseUrl}}/api/organizations"
+          }
+        },
+        {
+          "name": "Users",
+          "item": [
+            {
+              "name": "Listar usuários da organização",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{baseUrl}}/api/organizations/{{organizationId}}/users?skip=0&take=20", "host": ["{{baseUrl}}"], "path": ["api", "organizations", "{{organizationId}}", "users"], "query": [{ "key": "skip", "value": "0" }, { "key": "take", "value": "20" }] }
+              }
+            },
+            {
+              "name": "Obter usuário da organização",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/users/{{userId}}"
+              }
+            },
+            {
+              "name": "Adicionar usuário à organização",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"organizationRoleId\": \"{{roleId}}\"\n}" },
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/users",
+                "description": "organizationRoleId opcional; use Listar roles para obter IDs."
+              }
+            },
+            {
+              "name": "Atualizar usuário da organização",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Nome Atualizado\",\n  \"status\": \"active\",\n  \"organizationRoleId\": \"{{roleId}}\"\n}" },
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/users/{{userId}}"
+              }
+            },
+            {
+              "name": "Remover usuário da organização",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/users/{{userId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Roles",
+          "item": [
+            {
+              "name": "Listar roles da organização",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "const res = pm.response.json();",
+                    "const roles = res.data?.roles || [];",
+                    "if (roles.length > 0) pm.collectionVariables.set('roleId', roles[0].id);"
+                  ],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/roles"
+              }
+            },
+            {
+              "name": "Obter role por ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/roles/{{roleId}}"
+              }
+            },
+            {
+              "name": "Criar role",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "const res = pm.response.json();",
+                    "const id = res.data?.role?.id;",
+                    "if (id) pm.collectionVariables.set('roleId', id);"
+                  ],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Editor\",\n  \"slug\": \"editor\",\n  \"permissions\": [\"users_view\", \"users_edit\", \"invites_view\"]\n}" },
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/roles"
+              }
+            },
+            {
+              "name": "Atualizar role",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Editor Pleno\",\n  \"slug\": \"editor-pleno\",\n  \"permissions\": [\"users_view\", \"users_edit\", \"users_delete\", \"invites_view\", \"invites_create\"]\n}" },
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/roles/{{roleId}}"
+              }
+            },
+            {
+              "name": "Remover role",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/roles/{{roleId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Integration",
+          "item": [
+            {
+              "name": "Listar integrações",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "const res = pm.response.json();",
+                    "const list = res.data?.integrations || [];",
+                    "if (list.length > 0) pm.collectionVariables.set('integrationId', list[0].id);"
+                  ],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/integration"
+              }
+            },
+            {
+              "name": "Obter integração por ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/integration/{{integrationId}}"
+              }
+            },
+            {
+              "name": "Criar integração (No Auth)",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "const res = pm.response.json();",
+                    "const id = res.data?.integration?.id;",
+                    "if (id) pm.collectionVariables.set('integrationId', id);"
+                  ],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"type\": \"input\",\n  \"process\": \"material\",\n  \"url\": \"https://api.exemplo.com/v1\",\n  \"name\": \"Integração Material\",\n  \"authType\": \"NO_AUTH\"\n}" },
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/integration"
+              }
+            },
+            {
+              "name": "Criar integração (Basic Auth)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"type\": \"output\",\n  \"process\": \"partner\",\n  \"url\": \"https://api.parceiro.com/v1\",\n  \"name\": \"Parceiro Basic\",\n  \"authType\": \"BASIC\",\n  \"authConfig\": { \"username\": \"user\", \"password\": \"secret\" }\n}" },
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/integration"
+              }
+            },
+            {
+              "name": "Atualizar integração",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Integração Atualizada\",\n  \"url\": \"https://api.exemplo.com/v2\",\n  \"status\": \"active\"\n}" },
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/integration/{{integrationId}}"
+              }
+            },
+            {
+              "name": "Remover integração",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/integration/{{integrationId}}"
+              }
+            },
+            {
+              "name": "Sincronizar domínio",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/integration/{{integrationId}}/sync"
+              }
+            },
+            {
+              "name": "Listar logs da integração",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{baseUrl}}/api/organizations/{{organizationId}}/integration/{{integrationId}}/logs?skip=0&take=20", "host": ["{{baseUrl}}"], "path": ["api", "organizations", "{{organizationId}}", "integration", "{{integrationId}}", "logs"], "query": [{ "key": "skip", "value": "0" }, { "key": "take", "value": "20" }] }
+              }
+            },
+            {
+              "name": "Obter log por ID",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "const res = pm.response.json();",
+                    "const id = res.data?.log?.id;",
+                    "if (id) pm.collectionVariables.set('integrationLogId', id);"
+                  ],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/integration/{{integrationId}}/logs/{{integrationLogId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Domains",
+          "description": "Match codes SAP (tabela, campo, valor)",
+          "item": [
+            {
+              "name": "Listar domains",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "const res = pm.response.json();",
+                    "const list = res.data?.domains || [];",
+                    "if (list.length > 0) pm.collectionVariables.set('domainId', list[0].id);"
+                  ],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{baseUrl}}/api/organizations/{{organizationId}}/domains?skip=0&take=20", "host": ["{{baseUrl}}"], "path": ["api", "organizations", "{{organizationId}}", "domains"], "query": [{ "key": "skip", "value": "0" }, { "key": "take", "value": "20" }] }
+              }
+            },
+            {
+              "name": "Listar domains (agrupado)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/domains/grouped"
+              }
+            },
+            {
+              "name": "Obter domain por ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/domains/{{domainId}}"
+              }
+            },
+            {
+              "name": "Criar domain",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "const res = pm.response.json();",
+                    "const id = res.data?.domain?.id;",
+                    "if (id) pm.collectionVariables.set('domainId', id);"
+                  ],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"tabela\": \"t001\",\n  \"campo\": \"bukrs\",\n  \"valor\": \"0001\",\n  \"descricaoCampo\": \"empresa\"\n}" },
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/domains"
+              }
+            },
+            {
+              "name": "Atualizar domain",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"descricaoCampo\": \"Empresa (centro)\"\n}" },
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/domains/{{domainId}}"
+              }
+            },
+            {
+              "name": "Remover domain",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/domains/{{domainId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forms",
+          "item": [
+            {
+              "name": "Listar forms",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "const res = pm.response.json();",
+                    "const list = res.data?.forms || [];",
+                    "if (list.length > 0) pm.collectionVariables.set('formId', list[0].id);"
+                  ],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/forms"
+              }
+            },
+            {
+              "name": "Obter form por ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/forms/{{formId}}"
+              }
+            },
+            {
+              "name": "Criar form",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "const res = pm.response.json();",
+                    "const id = res.data?.form?.id;",
+                    "if (id) pm.collectionVariables.set('formId', id);"
+                  ],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Formulário Material\"\n}" },
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/forms"
+              }
+            },
+            {
+              "name": "Atualizar form",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Formulário Material (atualizado)\"\n}" },
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/forms/{{formId}}"
+              }
+            },
+            {
+              "name": "Remover form",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/forms/{{formId}}"
+              }
+            },
+            {
+              "name": "Listar campos do form",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "const res = pm.response.json();",
+                    "const list = res.data?.fields || [];",
+                    "if (list.length > 0) pm.collectionVariables.set('fieldId', list[0].id);"
+                  ],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/forms/{{formId}}/fields"
+              }
+            },
+            {
+              "name": "Criar campo do form",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "const res = pm.response.json();",
+                    "const id = res.data?.field?.id;",
+                    "if (id) pm.collectionVariables.set('fieldId', id);"
+                  ],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"campo\": \"codigo\",\n  \"tabela\": \"mara\",\n  \"sequencia\": 1\n}" },
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/forms/{{formId}}/fields"
+              }
+            },
+            {
+              "name": "Atualizar campo do form",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"campo\": \"codigo_material\",\n  \"tabela\": \"mara\",\n  \"sequencia\": 2\n}" },
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/forms/{{formId}}/fields/{{fieldId}}"
+              }
+            },
+            {
+              "name": "Remover campo do form",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/forms/{{formId}}/fields/{{fieldId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Workflows",
+          "item": [
+            {
+              "name": "Listar workflows",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "const res = pm.response.json();",
+                    "const list = res.data?.workflows || [];",
+                    "if (list.length > 0) pm.collectionVariables.set('workflowId', list[0].id);"
+                  ],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/workflows"
+              }
+            },
+            {
+              "name": "Obter workflow por ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/workflows/{{workflowId}}"
+              }
+            },
+            {
+              "name": "Criar workflow",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "const res = pm.response.json();",
+                    "const id = res.data?.workflow?.id;",
+                    "if (id) pm.collectionVariables.set('workflowId', id);"
+                  ],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"type\": \"material\",\n  \"action\": \"create\",\n  \"name\": \"Workflow Material - Criação\"\n}" },
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/workflows",
+                "description": "type: material | partner. action: create | update."
+              }
+            },
+            {
+              "name": "Atualizar workflow",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Workflow Material - Criação (atualizado)\"\n}" },
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/workflows/{{workflowId}}"
+              }
+            },
+            {
+              "name": "Remover workflow",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/workflows/{{workflowId}}"
+              }
+            },
+            {
+              "name": "Listar steps do workflow",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "const res = pm.response.json();",
+                    "const list = res.data?.steps || [];",
+                    "if (list.length > 0) pm.collectionVariables.set('stepId', list[0].id);"
+                  ],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/workflows/{{workflowId}}/steps"
+              }
+            },
+            {
+              "name": "Criar step do workflow",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "const res = pm.response.json();",
+                    "const id = res.data?.step?.id;",
+                    "if (id) pm.collectionVariables.set('stepId', id);"
+                  ],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"formId\": \"{{formId}}\",\n  \"organizationRoleId\": \"{{roleId}}\",\n  \"order\": 1\n}" },
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/workflows/{{workflowId}}/steps",
+                "description": "formId e organizationRoleId (perfil que aprova) obrigatórios."
+              }
+            },
+            {
+              "name": "Atualizar step do workflow",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"order\": 2\n}" },
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/workflows/{{workflowId}}/steps/{{stepId}}"
+              }
+            },
+            {
+              "name": "Remover step do workflow",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/workflows/{{workflowId}}/steps/{{stepId}}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Workflow Requests",
+          "item": [
+            {
+              "name": "Listar solicitações",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "const res = pm.response.json();",
+                    "const list = res.data?.requests || [];",
+                    "if (list.length > 0) pm.collectionVariables.set('requestId', list[0].id);"
+                  ],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{baseUrl}}/api/organizations/{{organizationId}}/workflow-requests?skip=0&take=20", "host": ["{{baseUrl}}"], "path": ["api", "organizations", "{{organizationId}}", "workflow-requests"], "query": [{ "key": "workflowId", "value": "{{workflowId}}", "disabled": true }, { "key": "status", "value": "pending", "disabled": true }, { "key": "filter", "value": "all", "description": "all | pending_my_approval (aguardam meu perfil) | submitted_by_me (que eu enviei)", "disabled": false }, { "key": "skip", "value": "0" }, { "key": "take", "value": "20" }] }
+              }
+            },
+            {
+              "name": "Pendentes da minha aprovação",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "const res = pm.response.json();",
+                    "const list = res.data?.requests || [];",
+                    "if (list.length > 0) pm.collectionVariables.set('requestId', list[0].id);"
+                  ],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": { "raw": "{{baseUrl}}/api/organizations/{{organizationId}}/workflow-requests/pending-my-approval?skip=0&take=20", "host": ["{{baseUrl}}"], "path": ["api", "organizations", "{{organizationId}}", "workflow-requests", "pending-my-approval"], "query": [{ "key": "skip", "value": "0" }, { "key": "take", "value": "20" }] },
+                "description": "Retorna apenas solicitações pendentes que aguardam aprovação do perfil do usuário logado."
+              }
+            },
+            {
+              "name": "Obter solicitação por ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/workflow-requests/{{requestId}}"
+              }
+            },
+            {
+              "name": "Submeter solicitação",
+              "event": [{
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "const res = pm.response.json();",
+                    "const id = res.data?.request?.id;",
+                    "if (id) pm.collectionVariables.set('requestId', id);"
+                  ],
+                  "type": "text/javascript"
+                }
+              }],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"workflowId\": \"{{workflowId}}\",\n  \"payload\": {\n    \"codigo\": \"MAT001\",\n    \"descricao\": \"Material de teste\"\n  }\n}" },
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/workflow-requests",
+                "description": "Dispara notificação e e-mail para aprovadores do primeiro step."
+              }
+            },
+            {
+              "name": "Aprovar / Rejeitar step",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"workflowStepId\": \"{{stepId}}\",\n  \"status\": \"approved\",\n  \"comments\": \"Aprovado.\"\n}" },
+                "url": "{{baseUrl}}/api/organizations/{{organizationId}}/workflow-requests/{{requestId}}/approve",
+                "description": "status: approved | rejected. workflowStepId = ID do step a aprovar/rejeitar."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Convites",
+      "item": [
+        {
+          "name": "Criar convite",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"novo@email.com\",\n  \"organizationId\": \"{{organizationId}}\"\n}" },
+            "url": "{{baseUrl}}/api/invite"
+          }
+        },
+        {
+          "name": "Validar token do convite",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/invite/validate?token=COLE_O_TOKEN_DO_CONVITE_AQUI", "host": ["{{baseUrl}}"], "path": ["api", "invite", "validate"], "query": [{ "key": "token", "value": "COLE_O_TOKEN_DO_CONVITE_AQUI" }] }
+          }
+        },
+        {
+          "name": "Aceitar convite",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"COLE_O_TOKEN_DO_CONVITE_AQUI\",\n  \"password\": \"minhaSenha123\",\n  \"name\": \"Nome do Usuário\"\n}" },
+            "url": "{{baseUrl}}/api/invite/accept"
+          }
+        },
+        {
+          "name": "Listar convites da organização",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/invite/organization/{{organizationId}}"
+          }
+        },
+        {
+          "name": "Listar convites pendentes da organização",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/invite/organization/{{organizationId}}/pending"
+          }
+        },
+        {
+          "name": "Eliminar convite pendente",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/invite/organization/{{organizationId}}/{{inviteId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Usuários (global)",
+      "item": [
+        {
+          "name": "Listar usuários",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/users?skip=0&take=20", "host": ["{{baseUrl}}"], "path": ["api", "users"], "query": [{ "key": "skip", "value": "0" }, { "key": "take", "value": "20" }] }
+          }
+        },
+        {
+          "name": "Obter usuário por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Criar usuário",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const res = pm.response.json();",
+                "const id = res.data?.user?.id || res.data?.id;",
+                "if (id) pm.collectionVariables.set('userId', id);"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"novo.usuario@nebula.dev\",\n  \"password\": \"senha123\",\n  \"name\": \"Novo Usuário\",\n  \"role\": \"org_user\",\n  \"status\": \"active\"\n}" },
+            "url": "{{baseUrl}}/api/users"
+          }
+        },
+        {
+          "name": "Atualizar usuário",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Nome Atualizado\",\n  \"status\": \"active\",\n  \"role\": \"org_user\"\n}" },
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Remover usuário",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Notifications",
+      "item": [
+        {
+          "name": "Listar notificações",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const res = pm.response.json();",
+                "const list = res.data?.notifications || [];",
+                "if (list.length > 0) pm.collectionVariables.set('notificationId', list[0].id);"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/notifications?skip=0&take=20", "host": ["{{baseUrl}}"], "path": ["api", "notifications"], "query": [{ "key": "unreadOnly", "value": "true", "disabled": true }, { "key": "organizationId", "value": "{{organizationId}}", "disabled": true }, { "key": "skip", "value": "0" }, { "key": "take", "value": "20" }] }
+          }
+        },
+        {
+          "name": "Obter notificação por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/notifications/{{notificationId}}"
+          }
+        },
+        {
+          "name": "Marcar notificação como lida",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"read\": true\n}" },
+            "url": "{{baseUrl}}/api/notifications/{{notificationId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Config",
+      "item": [
+        {
+          "name": "Obter tipos de roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{baseUrl}}/api/role-types"
+          }
+        }
+      ]
+    }
+  ]
+}
