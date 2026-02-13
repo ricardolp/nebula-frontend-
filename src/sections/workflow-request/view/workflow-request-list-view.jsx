@@ -28,10 +28,7 @@ import {
   TablePaginationCustom,
 } from 'src/components/table';
 
-import {
-  getOrganizationWorkflowRequests,
-  getOrganizationWorkflowRequestsPendingMyApproval,
-} from 'src/actions/workflow-requests';
+import { getOrganizationWorkflowRequests } from 'src/actions/workflow-requests';
 import { getOrganizationWorkflows } from 'src/actions/workflows';
 import { getOrganizationMe } from 'src/actions/users';
 
@@ -113,17 +110,13 @@ export function WorkflowRequestListView({ initialFilter = 'all', heading = 'Soli
     const skip = table.page * table.rowsPerPage;
     const take = table.rowsPerPage;
 
-    const isPendingMyApproval = initialFilter === 'pending_my_approval';
-
-    const request = isPendingMyApproval
-      ? getOrganizationWorkflowRequestsPendingMyApproval(organizationId, { skip, take })
-      : getOrganizationWorkflowRequests(organizationId, {
-          filter: filters.state.filter,
-          workflowId: filters.state.workflowId || undefined,
-          status: filters.state.status || undefined,
-          skip,
-          take,
-        });
+    const request = getOrganizationWorkflowRequests(organizationId, {
+      filter: filters.state.filter,
+      workflowId: filters.state.workflowId || undefined,
+      status: filters.state.status || undefined,
+      skip,
+      take,
+    });
 
     request
       .then(({ requests, total }) => {
@@ -141,7 +134,6 @@ export function WorkflowRequestListView({ initialFilter = 'all', heading = 'Soli
     organizationId,
     table.page,
     table.rowsPerPage,
-    initialFilter,
     filters.state.filter,
     filters.state.workflowId,
     filters.state.status,
@@ -268,7 +260,7 @@ export function WorkflowRequestListView({ initialFilter = 'all', heading = 'Soli
                         organizationId={organizationId}
                         currentUserOrganizationRoleId={currentUserOrganizationRoleId}
                         onOpenProcessDialog={handleOpenProcessDialog}
-                        showProcessar={initialFilter === 'pending_my_approval'}
+                        showProcessar={filters.state.filter === 'pending_my_approval'}
                       />
                     ))
                   )}

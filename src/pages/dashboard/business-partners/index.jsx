@@ -263,8 +263,8 @@ export default function BusinessPartnersListPage() {
       >
         <DialogTitle>
           {sendToSapDialogStatus === 'loading' && 'Enviar para SAP'}
-          {sendToSapDialogStatus === 'success' && 'Processado com sucesso'}
-          {sendToSapDialogStatus === 'error' && 'Erro'}
+          {sendToSapDialogStatus === 'success' && 'Enviado com sucesso'}
+          {sendToSapDialogStatus === 'error' && 'Erro ao enviar'}
         </DialogTitle>
         <DialogContent>
           {sendToSapDialogStatus === 'loading' && (
@@ -276,14 +276,34 @@ export default function BusinessPartnersListPage() {
             </Stack>
           )}
           {sendToSapDialogStatus === 'success' && (
-            <Typography variant="body2">
-              Processado com sucesso. Verifique o log de integração.
-            </Typography>
+            <Stack spacing={2} alignItems="center" sx={{ py: 2, textAlign: 'center' }}>
+              <Iconify
+                icon="solar:check-circle-bold"
+                width={64}
+                sx={{ color: 'success.main' }}
+              />
+              <Typography variant="body1" color="text.primary">
+                Parceiro enviado para o SAP com sucesso.
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Verifique o log de integração se necessário.
+              </Typography>
+            </Stack>
           )}
           {sendToSapDialogStatus === 'error' && (
-            <Typography variant="body2" color="error">
-              {sendToSapDialogError}
-            </Typography>
+            <Stack spacing={2} alignItems="center" sx={{ py: 2, textAlign: 'center' }}>
+              <Iconify
+                icon="solar:danger-triangle-bold"
+                width={64}
+                sx={{ color: 'error.main' }}
+              />
+              <Typography variant="body1" color="text.primary">
+                Não foi possível enviar para o SAP.
+              </Typography>
+              <Typography variant="body2" color="error.main" sx={{ maxWidth: 360 }}>
+                {sendToSapDialogError}
+              </Typography>
+            </Stack>
           )}
         </DialogContent>
         {(sendToSapDialogStatus === 'success' || sendToSapDialogStatus === 'error') && (

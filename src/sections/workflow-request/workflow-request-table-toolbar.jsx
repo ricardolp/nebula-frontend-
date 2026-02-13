@@ -32,7 +32,7 @@ export function WorkflowRequestTableToolbar({
   const handleFilterChange = useCallback(
     (key, value) => {
       onResetPage();
-      filters.setState((prev) => ({ ...prev, [key]: value }));
+      filters.setState({ [key]: value });
     },
     [filters, onResetPage]
   );
