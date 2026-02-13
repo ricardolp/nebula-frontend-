@@ -91,9 +91,26 @@ export async function getOrganizationForm(organizationId, formId) {
 
 /**
  * GET /api/organizations/:organizationId/forms/:formId/fields
- * Desativado para evitar CORS - retorna lista vazia
+ * Retorna os campos do formulário para exibir na edição (form builder).
+ * @param {string} organizationId
+ * @param {string} formId
+ * @returns {Promise<Array<{ id, formId, campo, tabela, sequencia }>>}
  */
-export async function getOrganizationFormFields(_organizationId, _formId) {
+export async function getOrganizationFormFields(organizationId, formId) {
+  if (!organizationId || !formId) {
+    return [];
+  }
+  const res = await axios.get(endpoints.organization.formFields(organizationId, formId));
+  const data = res.data;
+  if (data?.data?.fields && Array.isArray(data.data.fields)) {
+    return data.data.fields;
+  }
+  if (Array.isArray(data?.fields)) {
+    return data.fields;
+  }
+  if (Array.isArray(data)) {
+    return data;
+  }
   return [];
 }
 
