@@ -38,6 +38,7 @@ export function IntegrationTableRow({
   onDeleteRow,
   onEditRow,
   onSync,
+  onLogs,
 }) {
   const confirm = useBoolean();
   const popover = usePopover();
@@ -118,6 +119,15 @@ export function IntegrationTableRow({
           >
             <Iconify icon="solar:pen-bold" />
             Editar
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              popover.onClose();
+              onLogs?.(row.id, row.name);
+            }}
+          >
+            <Iconify icon="solar:document-text-bold" />
+            Logs
           </MenuItem>
           {row.process === 'domain' && (
             <MenuItem

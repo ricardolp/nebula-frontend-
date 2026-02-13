@@ -216,5 +216,15 @@ export const paths = {
       new: `${ROOTS.DASHBOARD}/business-partners/new`,
       edit: (id) => `${ROOTS.DASHBOARD}/business-partners/${id}/edit`,
     },
+    materials: {
+      root: `${ROOTS.DASHBOARD}/materials`,
+      new: `${ROOTS.DASHBOARD}/materials/new`,
+      view: (id) => `${ROOTS.DASHBOARD}/materials/${id}`,
+      edit: (id) => `${ROOTS.DASHBOARD}/materials/${id}/edit`,
+    },
+    domains: {
+      root: `${ROOTS.DASHBOARD}/domains`,
+      list: (tabela) => `${ROOTS.DASHBOARD}/domains/${tabela}`,
+    },
   },
 };

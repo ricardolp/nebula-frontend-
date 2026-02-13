@@ -9,9 +9,11 @@ import { CountryListPopover } from './list';
 
 // ----------------------------------------------------------------------
 
+const DEFAULT_COUNTRY = 'BR';
+
 export const PhoneInput = forwardRef(
   ({ value, onChange, placeholder, country: inputCountryCode, disableSelect, ...other }, ref) => {
-    const defaultCountryCode = getCountryCode(value, inputCountryCode);
+    const defaultCountryCode = getCountryCode(value, inputCountryCode ?? DEFAULT_COUNTRY);
 
     const [selectedCountry, setSelectedCountry] = useState(defaultCountryCode);
 

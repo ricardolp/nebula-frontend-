@@ -11,7 +11,7 @@ import { fDateTime } from 'src/utils/format-time';
 const TIPO_LABELS = { PF: 'Pessoa Física', PJ: 'Pessoa Jurídica' };
 const FUNCAO_LABELS = { C: 'Cliente', F: 'Fornecedor', A: 'Cliente e Fornecedor' };
 
-export function BusinessPartnerListRow({ row, onEditRow }) {
+export function BusinessPartnerListRow({ row, onEditRow, onSendToSap }) {
   const tipoLabel = TIPO_LABELS[row.tipo] ?? row.tipo ?? '-';
   const funcaoLabel = FUNCAO_LABELS[row.funcao] ?? row.funcao ?? '-';
   const nomeExibicao = row.nomeFantasia || row.razaoSocial || '-';
@@ -45,6 +45,13 @@ export function BusinessPartnerListRow({ row, onEditRow }) {
         {row.email ?? '-'}
       </TableCell>
       <TableCell>
+        {onSendToSap && (
+          <Tooltip title="Enviar para SAP" placement="top" arrow>
+            <IconButton color="primary" onClick={() => onSendToSap(row.id)}>
+              <Iconify icon="solar:upload-bold-duotone" />
+            </IconButton>
+          </Tooltip>
+        )}
         <Tooltip title="Editar" placement="top" arrow>
           <IconButton color="default" onClick={() => onEditRow?.(row.id)}>
             <Iconify icon="solar:pen-bold-duotone" />

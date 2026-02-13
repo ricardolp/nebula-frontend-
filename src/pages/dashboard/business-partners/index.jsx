@@ -3,9 +3,16 @@ import { useNavigate } from 'react-router-dom';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
 import TableBody from '@mui/material/TableBody';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
 
 import { paths } from 'src/routes/paths';
 
@@ -27,10 +34,11 @@ import {
   TablePaginationCustom,
 } from 'src/components/table';
 
-import { getOrganizationBps } from 'src/actions/bps';
+import { getOrganizationBps, sendBpToSap } from 'src/actions/bps';
 
 import { BusinessPartnerListRow } from 'src/sections/business-partner/business-partner-table-row';
 import { BusinessPartnerTableSkeleton } from 'src/sections/business-partner/business-partner-table-skeleton';
+import { BusinessPartnerNewDialog } from 'src/sections/business-partner/business-partner-new-dialog';
 
 // ----------------------------------------------------------------------
 // Mapeia BP da API para o formato da tabela
@@ -82,6 +90,10 @@ export default function BusinessPartnersListPage() {
   const [tableData, setTableData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [newDialogOpen, setNewDialogOpen] = useState(false);
+  const [sendToSapDialogOpen, setSendToSapDialogOpen] = useState(false);
+  const [sendToSapDialogStatus, setSendToSapDialogStatus] = useState('idle'); // 'idle' | 'loading' | 'success' | 'error'
+  const [sendToSapDialogError, setSendToSapDialogError] = useState(null);
 
   const prevOrgRef = useRef(organizationId);
 
@@ -124,12 +136,43 @@ export default function BusinessPartnersListPage() {
   const notFound = !loading && !error && !tableData.length;
 
   const handleNew = () => {
-    navigate(paths.dashboard.businessPartners.new);
+    setNewDialogOpen(true);
+  };
+
+  const handleNewDialogConfirm = ({ tipo, funcao }) => {
+    navigate(paths.dashboard.businessPartners.new, { state: { tipo, funcao } });
   };
 
   const handleEditRow = (id) => {
     navigate(paths.dashboard.businessPartners.edit(id));
   };
+
+  const handleSendToSapRow = useCallback(
+    (bpId) => {
+      if (!organizationId) return;
+
+      setSendToSapDialogOpen(true);
+      setSendToSapDialogStatus('loading');
+      setSendToSapDialogError(null);
+
+      sendBpToSap(organizationId, bpId)
+        .then(() => {
+          setSendToSapDialogStatus('success');
+          loadBps();
+        })
+        .catch((err) => {
+          setSendToSapDialogStatus('error');
+          setSendToSapDialogError(err?.message || 'Erro ao enviar para o SAP');
+        });
+    },
+    [organizationId, loadBps]
+  );
+
+  const handleCloseSendToSapDialog = useCallback(() => {
+    setSendToSapDialogOpen(false);
+    setSendToSapDialogStatus('idle');
+    setSendToSapDialogError(null);
+  }, []);
 
   return (
     <DashboardContent>
@@ -138,7 +181,6 @@ export default function BusinessPartnersListPage() {
         links={[
           { name: 'Dashboard', href: paths.dashboard.root },
           { name: 'Business Partner', href: paths.dashboard.businessPartners.root },
-          { name: 'Listagem' },
         ]}
         action={
           <Button
@@ -177,6 +219,7 @@ export default function BusinessPartnersListPage() {
                       key={row.id}
                       row={row}
                       onEditRow={() => handleEditRow(row.id)}
+                      onSendToSap={handleSendToSapRow}
                     />
                   ))
                 )}
@@ -204,6 +247,53 @@ export default function BusinessPartnersListPage() {
           onRowsPerPageChange={table.onChangeRowsPerPage}
         />
       </Card>
+
+      <BusinessPartnerNewDialog
+        open={newDialogOpen}
+        onClose={() => setNewDialogOpen(false)}
+        onConfirm={handleNewDialogConfirm}
+      />
+
+      <Dialog
+        open={sendToSapDialogOpen}
+        onClose={sendToSapDialogStatus === 'loading' ? undefined : handleCloseSendToSapDialog}
+        disableEscapeKeyDown={sendToSapDialogStatus === 'loading'}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>
+          {sendToSapDialogStatus === 'loading' && 'Enviar para SAP'}
+          {sendToSapDialogStatus === 'success' && 'Processado com sucesso'}
+          {sendToSapDialogStatus === 'error' && 'Erro'}
+        </DialogTitle>
+        <DialogContent>
+          {sendToSapDialogStatus === 'loading' && (
+            <Stack spacing={2} alignItems="center" sx={{ py: 2 }}>
+              <CircularProgress />
+              <Typography variant="body2" color="text.secondary">
+                Enviando para o SAP, aguarde...
+              </Typography>
+            </Stack>
+          )}
+          {sendToSapDialogStatus === 'success' && (
+            <Typography variant="body2">
+              Processado com sucesso. Verifique o log de integração.
+            </Typography>
+          )}
+          {sendToSapDialogStatus === 'error' && (
+            <Typography variant="body2" color="error">
+              {sendToSapDialogError}
+            </Typography>
+          )}
+        </DialogContent>
+        {(sendToSapDialogStatus === 'success' || sendToSapDialogStatus === 'error') && (
+          <DialogActions>
+            <Button variant="contained" onClick={handleCloseSendToSapDialog}>
+              Fechar
+            </Button>
+          </DialogActions>
+        )}
+      </Dialog>
     </DashboardContent>
   );
 }

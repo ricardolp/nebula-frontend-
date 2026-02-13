@@ -76,6 +76,14 @@ const WorkflowSlasListPage = lazy(() => import('src/pages/dashboard/workflow-sla
 const BusinessPartnersListPage = lazy(() => import('src/pages/dashboard/business-partners/index'));
 const BusinessPartnerNewPage = lazy(() => import('src/pages/dashboard/business-partners/new'));
 const BusinessPartnerEditPage = lazy(() => import('src/pages/dashboard/business-partners/edit'));
+// Materials
+const MaterialsListPage = lazy(() => import('src/pages/dashboard/materials/index'));
+const MaterialNewPage = lazy(() => import('src/pages/dashboard/materials/new'));
+const MaterialEditPage = lazy(() => import('src/pages/dashboard/materials/edit'));
+const MaterialViewPage = lazy(() => import('src/pages/dashboard/materials/view'));
+// Domains
+const DomainsGroupedPage = lazy(() => import('src/pages/dashboard/domains/index'));
+const DomainsByTabelaPage = lazy(() => import('src/pages/dashboard/domains/by-tabela'));
 // App
 const ChatPage = lazy(() => import('src/pages/dashboard/chat'));
 const MailPage = lazy(() => import('src/pages/dashboard/mail'));
@@ -181,6 +189,22 @@ export const dashboardRoutes = [
           { element: <BusinessPartnersListPage />, index: true },
           { path: 'new', element: <BusinessPartnerNewPage /> },
           { path: ':id/edit', element: <BusinessPartnerEditPage /> },
+        ],
+      },
+      {
+        path: 'materials',
+        children: [
+          { element: <MaterialsListPage />, index: true },
+          { path: 'new', element: <MaterialNewPage /> },
+          { path: ':id', element: <MaterialViewPage /> },
+          { path: ':id/edit', element: <MaterialEditPage /> },
+        ],
+      },
+      {
+        path: 'domains',
+        children: [
+          { element: <DomainsGroupedPage />, index: true },
+          { path: ':tabela', element: <DomainsByTabelaPage /> },
         ],
       },
       {

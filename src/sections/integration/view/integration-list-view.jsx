@@ -4,10 +4,18 @@ import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Table from '@mui/material/Table';
+import TableRow from '@mui/material/TableRow';
+import TableCell from '@mui/material/TableCell';
 import Button from '@mui/material/Button';
 import TableBody from '@mui/material/TableBody';
+import TableContainer from '@mui/material/TableContainer';
 import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Typography from '@mui/material/Typography';
 
 import { paths } from 'src/routes/paths';
 
@@ -38,7 +46,11 @@ import {
   getOrganizationIntegrations,
   deleteOrganizationIntegration,
   syncOrganizationIntegration,
+  getIntegrationLogs,
 } from 'src/actions/integrations';
+
+import { fDateTime } from 'src/utils/format-time';
+import { Label } from 'src/components/label';
 
 import { IntegrationFormDialog } from '../integration-form-dialog';
 import { IntegrationTableRow } from '../integration-table-row';
@@ -88,8 +100,42 @@ export function IntegrationListView() {
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [syncingId, setSyncingId] = useState(null);
   const [formEditId, setFormEditId] = useState(null);
+  const [syncDialogOpen, setSyncDialogOpen] = useState(false);
+  const [syncDialogStatus, setSyncDialogStatus] = useState('idle'); // 'idle' | 'loading' | 'success' | 'error'
+  const [syncDialogError, setSyncDialogError] = useState(null);
+
+  const [logsDialogOpen, setLogsDialogOpen] = useState(false);
+  const [logsDialogIntegrationName, setLogsDialogIntegrationName] = useState('');
+  const [logsDialogIntegrationId, setLogsDialogIntegrationId] = useState(null);
+  const [logsDialogLogs, setLogsDialogLogs] = useState([]);
+  const [logsDialogLoading, setLogsDialogLoading] = useState(false);
+
+  const [payloadDialogOpen, setPayloadDialogOpen] = useState(false);
+  const [payloadDialogTitle, setPayloadDialogTitle] = useState('');
+  const [payloadDialogContent, setPayloadDialogContent] = useState('');
 
   const prevOrgRef = useRef(organizationId);
+
+  const formatPayload = useCallback((payload) => {
+    if (payload == null) return '(vazio)';
+    try {
+      return typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
+    } catch {
+      return String(payload);
+    }
+  }, []);
+
+  const handleOpenPayload = useCallback((title, payload) => {
+    setPayloadDialogTitle(title);
+    setPayloadDialogContent(formatPayload(payload));
+    setPayloadDialogOpen(true);
+  }, [formatPayload]);
+
+  const handleClosePayloadDialog = useCallback(() => {
+    setPayloadDialogOpen(false);
+    setPayloadDialogTitle('');
+    setPayloadDialogContent('');
+  }, []);
 
   const loadIntegrations = useCallback(() => {
     if (!organizationId) {
@@ -152,14 +198,19 @@ export function IntegrationListView() {
     (id) => {
       if (!organizationId) return;
 
+      setSyncDialogOpen(true);
+      setSyncDialogStatus('loading');
+      setSyncDialogError(null);
       setSyncingId(id);
+
       syncOrganizationIntegration(organizationId, id)
         .then(() => {
-          toast.success('Sincronização iniciada!');
+          setSyncDialogStatus('success');
           loadIntegrations();
         })
         .catch((err) => {
-          toast.error(err?.message || 'Erro ao sincronizar');
+          setSyncDialogStatus('error');
+          setSyncDialogError(err?.message || 'Erro ao sincronizar');
         })
         .finally(() => {
           setSyncingId(null);
@@ -167,6 +218,35 @@ export function IntegrationListView() {
     },
     [organizationId, loadIntegrations]
   );
+
+  const handleCloseSyncDialog = useCallback(() => {
+    setSyncDialogOpen(false);
+    setSyncDialogStatus('idle');
+    setSyncDialogError(null);
+  }, []);
+
+  const handleOpenLogs = useCallback(
+    (integrationId, integrationName) => {
+      if (!organizationId || !integrationId) return;
+      setLogsDialogIntegrationId(integrationId);
+      setLogsDialogIntegrationName(integrationName ?? 'Integração');
+      setLogsDialogOpen(true);
+      setLogsDialogLogs([]);
+      setLogsDialogLoading(true);
+      getIntegrationLogs(organizationId, integrationId, { skip: 0, take: 20 })
+        .then((logs) => setLogsDialogLogs(Array.isArray(logs) ? logs : []))
+        .catch(() => setLogsDialogLogs([]))
+        .finally(() => setLogsDialogLoading(false));
+    },
+    [organizationId]
+  );
+
+  const handleCloseLogsDialog = useCallback(() => {
+    setLogsDialogOpen(false);
+    setLogsDialogIntegrationId(null);
+    setLogsDialogIntegrationName('');
+    setLogsDialogLogs([]);
+  }, []);
 
   const handleDeleteRows = useCallback(() => {
     if (!organizationId || !table.selected.length) return;
@@ -298,6 +378,7 @@ export function IntegrationListView() {
                             ? () => handleSyncRow(row.id)
                             : undefined
                         }
+                        onLogs={() => handleOpenLogs(row.id, row.name)}
                       />
                     ))
                   )}
@@ -363,6 +444,203 @@ export function IntegrationListView() {
         editId={formEditId}
         onSuccess={loadIntegrations}
       />
+
+      <Dialog
+        open={syncDialogOpen}
+        onClose={syncDialogStatus === 'loading' ? undefined : handleCloseSyncDialog}
+        disableEscapeKeyDown={syncDialogStatus === 'loading'}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>
+          {syncDialogStatus === 'loading' && 'Sincronização'}
+          {syncDialogStatus === 'success' && 'Sincronização'}
+          {syncDialogStatus === 'error' && 'Erro'}
+        </DialogTitle>
+        <DialogContent>
+          {syncDialogStatus === 'loading' && (
+            <Stack spacing={2} alignItems="center" sx={{ py: 2 }}>
+              <CircularProgress />
+              <Typography variant="body2" color="text.secondary">
+                Carregando dados, aguarde...
+              </Typography>
+            </Stack>
+          )}
+          {syncDialogStatus === 'success' && (
+            <Typography variant="body2">Efetuado com sucesso.</Typography>
+          )}
+          {syncDialogStatus === 'error' && (
+            <Typography variant="body2" color="error">
+              {syncDialogError}
+            </Typography>
+          )}
+        </DialogContent>
+        {(syncDialogStatus === 'success' || syncDialogStatus === 'error') && (
+          <DialogActions>
+            <Button variant="contained" onClick={handleCloseSyncDialog}>
+              Fechar
+            </Button>
+          </DialogActions>
+        )}
+      </Dialog>
+
+      <Dialog
+        open={logsDialogOpen}
+        onClose={handleCloseLogsDialog}
+        maxWidth="md"
+        fullWidth
+        scroll="paper"
+      >
+        <DialogTitle>Logs de integração — {logsDialogIntegrationName}</DialogTitle>
+        <DialogContent dividers>
+          {logsDialogLoading ? (
+            <Stack spacing={2} alignItems="center" sx={{ py: 3 }}>
+              <CircularProgress />
+              <Typography variant="body2" color="text.secondary">
+                Carregando logs...
+              </Typography>
+            </Stack>
+          ) : (
+            <TableContainer sx={{ minHeight: 200 }}>
+              <Table size="small" stickyHeader>
+                <TableHeadCustom
+                  headLabel={[
+                    { id: 'status', label: 'Status', width: 100 },
+                    { id: 'createdAt', label: 'Data/Hora', width: 160 },
+                    { id: 'httpMethod', label: 'Método', width: 70 },
+                    { id: 'statusCode', label: 'Código', width: 70 },
+                    { id: 'responseTimeMs', label: 'Tempo (ms)', width: 90 },
+                    { id: 'errorMessage', label: 'Mensagem', width: 200 },
+                    { id: 'actions', label: 'Payload', width: 120 },
+                  ]}
+                />
+                <TableBody>
+                  {logsDialogLogs.length === 0 && !logsDialogLoading && (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Nenhum log encontrado.
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {logsDialogLogs.map((log) => {
+                    const statusColor =
+                      log.status === 'success'
+                        ? 'success'
+                        : log.status === 'timeout'
+                          ? 'warning'
+                          : 'error';
+                    const statusLabel =
+                      log.status === 'success'
+                        ? 'Sucesso'
+                        : log.status === 'timeout'
+                          ? 'Timeout'
+                          : 'Erro';
+                    return (
+                      <TableRow key={log.id} hover>
+                        <TableCell>
+                          <Label variant="soft" color={statusColor}>
+                            {statusLabel}
+                          </Label>
+                        </TableCell>
+                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                          {log.createdAt
+                            ? fDateTime(log.createdAt, 'DD/MM/YYYY HH:mm:ss')
+                            : '-'}
+                        </TableCell>
+                        <TableCell>{log.httpMethod ?? '-'}</TableCell>
+                        <TableCell>{log.statusCode ?? '-'}</TableCell>
+                        <TableCell>{log.responseTimeMs ?? '-'}</TableCell>
+                        <TableCell
+                          sx={{
+                            maxWidth: 280,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                          title={log.errorMessage ?? ''}
+                        >
+                          {log.errorMessage ?? '-'}
+                        </TableCell>
+                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                          <Stack direction="row" spacing={0.25}>
+                            <Tooltip title="Ver payload de envio" placement="top" arrow>
+                              <IconButton
+                                size="small"
+                                color="inherit"
+                                onClick={() =>
+                                  handleOpenPayload(
+                                    'Payload de envio',
+                                    log.requestPayload
+                                  )
+                                }
+                              >
+                                <Iconify icon="solar:upload-minimalistic-bold" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Ver payload de retorno" placement="top" arrow>
+                              <IconButton
+                                size="small"
+                                color="inherit"
+                                onClick={() =>
+                                  handleOpenPayload(
+                                    'Payload de retorno',
+                                    log.responsePayload
+                                  )
+                                }
+                              >
+                                <Iconify icon="solar:download-minimalistic-bold" />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button variant="contained" onClick={handleCloseLogsDialog}>
+            Fechar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={payloadDialogOpen}
+        onClose={handleClosePayloadDialog}
+        maxWidth="md"
+        fullWidth
+        scroll="paper"
+      >
+        <DialogTitle>{payloadDialogTitle}</DialogTitle>
+        <DialogContent dividers>
+          <Scrollbar sx={{ maxHeight: 400 }}>
+            <Box
+              component="pre"
+              sx={{
+                p: 2,
+                borderRadius: 1,
+                bgcolor: 'background.neutral',
+                fontFamily: 'monospace',
+                fontSize: '0.75rem',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+              }}
+            >
+              {payloadDialogContent}
+            </Box>
+          </Scrollbar>
+        </DialogContent>
+        <DialogActions>
+          <Button variant="contained" onClick={handleClosePayloadDialog}>
+            Fechar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

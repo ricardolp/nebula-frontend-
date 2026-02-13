@@ -75,6 +75,15 @@ export const endpoints = {
       `/api/organizations/${organizationId}/workflow-requests/${requestId}`,
     bps: (organizationId) => `/api/organizations/${organizationId}/bps`,
     bp: (organizationId, bpId) => `/api/organizations/${organizationId}/bps/${bpId}`,
+    bpSendToSap: (organizationId, bpId) =>
+      `/api/organizations/${organizationId}/bps/${bpId}/send-to-sap`,
+    materials: (organizationId) => `/api/organizations/${organizationId}/materials`,
+    material: (organizationId, materialId) =>
+      `/api/organizations/${organizationId}/materials/${materialId}`,
+    materialSendSap: (organizationId, materialId) =>
+      `/api/organizations/${organizationId}/materials/${materialId}/send-sap`,
+    materialLogs: (organizationId, materialId) =>
+      `/api/organizations/${organizationId}/materials/${materialId}/logs`,
     workflowSlas: (organizationId) =>
       `/api/organizations/${organizationId}/workflow-slas`,
     forms: (organizationId) => `/api/organizations/${organizationId}/forms`,
@@ -89,6 +98,12 @@ export const endpoints = {
       `/api/organizations/${organizationId}/integration/${integrationId}`,
     integrationSync: (organizationId, integrationId) =>
       `/api/organizations/${organizationId}/integration/${integrationId}/sync`,
+    integrationLogs: (organizationId, integrationId) =>
+      `/api/organizations/${organizationId}/integration/${integrationId}/logs`,
+    domains: (organizationId) =>
+      `/api/organizations/${organizationId}/domains`,
+    domainsGrouped: (organizationId) =>
+      `/api/organizations/${organizationId}/domains/grouped`,
   },
   roleTypes: '/api/role-types',
   invite: '/api/invite',

@@ -4,11 +4,25 @@ import axios, { endpoints } from 'src/utils/axios';
 
 /**
  * GET /api/organizations/:organizationId/forms
- * Desativado para evitar CORS - retorna lista vazia
  * @param {string} organizationId
  * @param {{ activeOnly?: boolean }} [options]
+ * @returns {Promise<Array>} Lista de formulários
  */
 export async function getOrganizationForms(organizationId, _options = {}) {
+  if (!organizationId) {
+    return [];
+  }
+  const res = await axios.get(endpoints.organization.forms(organizationId));
+  const data = res.data;
+  if (data?.data?.forms) {
+    return data.data.forms;
+  }
+  if (Array.isArray(data?.forms)) {
+    return data.forms;
+  }
+  if (Array.isArray(data)) {
+    return data;
+  }
   return [];
 }
 

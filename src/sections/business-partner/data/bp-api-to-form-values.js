@@ -46,7 +46,7 @@ export function mapBpApiToFormValues(bp) {
   flat.bairro = safe(endereco.bairro);
   flat.cidade = safe(endereco.cidade);
   flat.estado = safe(endereco.estado ?? endereco.uf);
-  flat.pais = safe(endereco.pais);
+  flat.pais = safe(endereco.pais) || 'BR';
 
   // comunicacao (objeto único)
   const comunicacao = bp.comunicacao && typeof bp.comunicacao === 'object' ? bp.comunicacao : {};
@@ -143,8 +143,44 @@ export function mapBpApiToFormValues(bp) {
     codigoIrf: safe(fornecedor.codigoIrf),
   });
 
-  // clienteVendas[0], clienteEmpresas[0]
-  const clienteVendas = Array.isArray(bp.clienteVendas) && bp.clienteVendas[0] ? bp.clienteVendas[0] : {};
+  // clienteVendas: array completo para múltiplas áreas de vendas; flat mantém primeiro item para compat
+  const clienteVendasArray = Array.isArray(bp.clienteVendas) ? bp.clienteVendas : [];
+  const mapClienteVendasItem = (item) => {
+    const cv = item && typeof item === 'object' ? item : {};
+    return {
+      orgVendas: safe(cv.orgVendas),
+      canalDistr: safe(cv.canalDistr),
+      setorAtiv: safe(cv.setorAtiv),
+      regiaoVendas: safe(cv.regiaoVendas),
+      prioridadeRemessa: safe(cv.prioridadeRemessa),
+      grpClassContCli: safe(cv.grpClassContCli),
+      classFiscal: safe(cv.classFiscal),
+      moedaCliente: safe(cv.moedaCliente),
+      esquemaCliente: safe(cv.esquemaCliente),
+      grupoPreco: safe(cv.grupoPreco),
+      listaPreco: safe(cv.listaPreco),
+      icms: safe(cv.icms),
+      ipi: safe(cv.ipi),
+      substFiscal: safe(cv.substFiscal),
+      cfop: safe(cv.cfop),
+      agrupamentoOrdens: Boolean(cv.agrupamentoOrdens),
+      vendasGrupoClientes: safe(cv.vendasGrupoClientes),
+      vendasEscritorioVendas: safe(cv.vendasEscritorioVendas),
+      vendasEquipeVendas: safe(cv.vendasEquipeVendas),
+      vendasAtributo1: safe(cv.vendasAtributo1),
+      vendasAtributo2: safe(cv.vendasAtributo2),
+      vendasSociedadeParceiro: safe(cv.vendasSociedadeParceiro),
+      vendasCentroFornecedor: safe(cv.vendasCentroFornecedor),
+      condicaoExpedicao: safe(cv.condicaoExpedicao),
+      vendasRelevanteliquidacao: Boolean(cv.vendasRelevanteliquidacao),
+      relevanteCrr: Boolean(cv.relevanteCrr),
+      perfilClienteBayer: safe(cv.perfilClienteBayer),
+    };
+  };
+  flat.clienteVendasList = clienteVendasArray.map(mapClienteVendasItem);
+  flat.selectedSalesAreaIndex = flat.clienteVendasList.length > 0 ? 0 : null;
+
+  const clienteVendas = clienteVendasArray[0] || {};
   const clienteEmpresas = Array.isArray(bp.clienteEmpresas) && bp.clienteEmpresas[0] ? bp.clienteEmpresas[0] : {};
   Object.assign(flat, {
     orgVendas: safe(clienteVendas.orgVendas),
@@ -212,4 +248,37 @@ export function mapBpApiToFormValues(bp) {
   });
 
   return flat;
+}
+
+/** Objeto vazio de área de vendas (clienteVendas) para botão Inserir */
+export function getEmptyClienteVendasItem() {
+  return {
+    orgVendas: '',
+    canalDistr: '',
+    setorAtiv: '',
+    regiaoVendas: '',
+    prioridadeRemessa: '',
+    grpClassContCli: '',
+    classFiscal: '',
+    moedaCliente: '',
+    esquemaCliente: '',
+    grupoPreco: '',
+    listaPreco: '',
+    icms: '',
+    ipi: '',
+    substFiscal: '',
+    cfop: '',
+    agrupamentoOrdens: false,
+    vendasGrupoClientes: '',
+    vendasEscritorioVendas: '',
+    vendasEquipeVendas: '',
+    vendasAtributo1: '',
+    vendasAtributo2: '',
+    vendasSociedadeParceiro: '',
+    vendasCentroFornecedor: '',
+    condicaoExpedicao: '',
+    vendasRelevanteliquidacao: false,
+    relevanteCrr: false,
+    perfilClienteBayer: '',
+  };
 }

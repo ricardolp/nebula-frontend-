@@ -2,6 +2,8 @@ import { parsePhoneNumber } from 'react-phone-number-input';
 
 import { countries } from 'src/assets/data/countries';
 
+const DEFAULT_COUNTRY = 'BR';
+
 // ----------------------------------------------------------------------
 
 export function getCountryCode(inputValue, countryCode) {
@@ -13,7 +15,7 @@ export function getCountryCode(inputValue, countryCode) {
     }
   }
 
-  return countryCode ?? 'US';
+  return countryCode ?? DEFAULT_COUNTRY;
 }
 
 // ----------------------------------------------------------------------

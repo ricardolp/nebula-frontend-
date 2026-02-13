@@ -144,3 +144,32 @@ export async function syncOrganizationIntegration(organizationId, integrationId)
 
   return data ?? res.data;
 }
+
+// ----------------------------------------------------------------------
+
+/**
+ * GET /api/organizations/:organizationId/integration/:integrationId/logs?skip=0&take=20
+ * Resposta: { success, data: { logs: [...] } }
+ */
+export async function getIntegrationLogs(
+  organizationId,
+  integrationId,
+  { skip = 0, take = 20 } = {}
+) {
+  if (!organizationId || !integrationId) {
+    throw new Error('organizationId e integrationId são obrigatórios');
+  }
+
+  const res = await axios.get(
+    endpoints.organization.integrationLogs(organizationId, integrationId),
+    { params: { skip, take } }
+  );
+
+  const { success, data } = res.data ?? {};
+
+  if (success === false) {
+    throw new Error(res.data?.error?.message || 'Erro ao carregar logs');
+  }
+
+  return data?.logs ?? [];
+}

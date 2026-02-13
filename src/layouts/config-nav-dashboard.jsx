@@ -58,10 +58,11 @@ export const navData = [
         title: 'Business Partner',
         path: paths.dashboard.businessPartners.root,
         icon: ICONS.user,
-        children: [
-          { title: 'Listagem', path: paths.dashboard.businessPartners.root },
-          { title: 'Formulário completo', path: paths.dashboard.businessPartners.new },
-        ],
+      },
+      {
+        title: 'Materiais',
+        path: paths.dashboard.materials.root,
+        icon: ICONS.product,
       },
     ],
   },
@@ -104,6 +105,11 @@ export const navData = [
           { title: 'Gerenciar', path: paths.dashboard.workflowRequests.root },
           { title: 'Pendentes', path: paths.dashboard.workflowRequests.pending },
         ],
+      },
+      {
+        title: 'Domínios',
+        path: paths.dashboard.domains.root,
+        icon: ICONS.parameter,
       },
     ],
   },
