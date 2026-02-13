@@ -342,9 +342,10 @@ export function WorkflowRequestProcessDialog({
             (a, b) => (a.sequencia ?? 0) - (b.sequencia ?? 0)
           );
           setFormFields(sorted);
+          // Key by field.id so same campo in different tabs (e.g. centro in VendorCompany vs CustomerCompany) don't overwrite
           const initial = {};
           sorted.forEach((f) => {
-            initial[f.campo] = '';
+            initial[f.id] = '';
           });
           setFormValues(initial);
         })
@@ -375,14 +376,16 @@ export function WorkflowRequestProcessDialog({
     try {
       const bpId = request?.bpId;
       if (bpId && formFields.length > 0) {
-        const bpPayload = buildBpPayloadFromForm(formFields, formValues);
+        const bpPayload = buildBpPayloadFromForm(formFields, formValues, { keyByFieldId: true });
         await patchOrganizationBp(organizationId, bpId, bpPayload);
       }
+      const commentsField = formFields.find((f) => f.campo === 'comments');
+      const comments = commentsField ? formValues[commentsField.id] : undefined;
       await approveOrganizationWorkflowRequest(organizationId, requestId, {
         workflowStepId: selectedStep.workflowStepId ?? selectedStep.id,
         status: 'approved',
-        comments: formValues.comments ?? undefined,
-        payload: formValues,
+        comments: comments ?? undefined,
+        payload: formValues, // keyed by field.id
       });
       toast.success('Solicitação processada.');
       handleClose();
@@ -407,8 +410,8 @@ export function WorkflowRequestProcessDialog({
     onSuccess,
   ]);
 
-  const updateFormValue = useCallback((campo, value) => {
-    setFormValues((prev) => ({ ...prev, [campo]: value }));
+  const updateFormValue = useCallback((fieldId, value) => {
+    setFormValues((prev) => ({ ...prev, [fieldId]: value }));
   }, []);
 
   // Agrupa campos por tabela (aba); apenas os campos que existem no form
@@ -555,8 +558,8 @@ export function WorkflowRequestProcessDialog({
                                   <Grid item xs={12} sm={6} key={field.id}>
                                     <StepFormField
                                       field={field}
-                                      value={formValues[field.campo]}
-                                      onChange={(v) => updateFormValue(field.campo, v)}
+                                      value={formValues[field.id]}
+                                      onChange={(v) => updateFormValue(field.id, v)}
                                     />
                                   </Grid>
                                 ))}

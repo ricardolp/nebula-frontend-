@@ -35,11 +35,65 @@ const TABELA_TO_PATH = {
   CreditCollection: { key: 'collection', array: true },
 };
 
+/** Normaliza nome da tabela (API pode vir "endereco", "Endereço", "address") para chave canônica do TABELA_TO_PATH */
+const TABELA_NORMALIZE = {
+  endereco: 'Address',
+  endereço: 'Address',
+  address: 'Address',
+  comunicacao: 'Communication',
+  comunicação: 'Communication',
+  communication: 'Communication',
+  identificacao: 'Identification',
+  identificação: 'Identification',
+  identification: 'Identification',
+  setorindustrial: 'IndustrySector',
+  'industry-sector': 'IndustrySector',
+  industrysector: 'IndustrySector',
+  pagamentos: 'Payment',
+  payment: 'Payment',
+  funcoesparceiro: 'PartnerFunction',
+  'partner-function': 'PartnerFunction',
+  partnerfunction: 'PartnerFunction',
+  dadosadicionais: 'AdditionalData',
+  'additional-data': 'AdditionalData',
+  additionaldata: 'AdditionalData',
+  fornecedor: 'Vendor',
+  vendor: 'Vendor',
+  fornecedorcompras: 'VendorPurchasing',
+  vendorpurchasing: 'VendorPurchasing',
+  fornecedorempresas: 'VendorCompany',
+  vendorcompany: 'VendorCompany',
+  fornecedorirf: 'VendorIRF',
+  vendorirf: 'VendorIRF',
+  clientevendas: 'CustomerSales',
+  customersales: 'CustomerSales',
+  clienteempresas: 'CustomerCompany',
+  customercompany: 'CustomerCompany',
+  dadoscredito: 'CreditData',
+  'credit-data': 'CreditData',
+  creditdata: 'CreditData',
+  collection: 'CreditCollection',
+  'credit-collection': 'CreditCollection',
+  creditcollection: 'CreditCollection',
+  businesspartner: 'BusinessPartner',
+  general: 'BusinessPartner',
+};
+
+function normalizeTabela(tabela) {
+  if (!tabela || typeof tabela !== 'string') return 'BusinessPartner';
+  const trimmed = tabela.trim();
+  const normalized = trimmed.toLowerCase().replace(/\s+/g, '').replace(/ç/g, 'c');
+  if (TABELA_NORMALIZE[normalized]) return TABELA_NORMALIZE[normalized];
+  if (TABELA_TO_PATH[trimmed]) return trimmed;
+  return null;
+}
+
 /** VendorPurchasing, VendorCompany, VendorIRF ficam dentro de fornecedor (arrays) */
 const NESTED_UNDER_FORNECEDOR = ['VendorPurchasing', 'VendorCompany', 'VendorIRF'];
 
 function getPathForTabela(tabela) {
-  const t = (tabela || 'BusinessPartner').trim();
+  const canonical = normalizeTabela(tabela);
+  const t = canonical || (tabela || 'BusinessPartner').trim();
   const def = TABELA_TO_PATH[t];
   if (def) return def;
   return { key: t === 'BusinessPartner' ? null : snakeToCamel(t), array: false };
@@ -48,22 +102,25 @@ function getPathForTabela(tabela) {
 /**
  * Monta o payload para PATCH do BP a partir dos campos do formulário e valores.
  * @param {Array<{ id, campo, tabela }>} formFields - campos do form (campo em snake_case, tabela)
- * @param {Record<string, unknown>} formValues - valores keyed por campo (snake_case)
+ * @param {Record<string, unknown>} formValues - valores keyed por campo (snake_case) ou por field.id se keyByFieldId
+ * @param {{ keyByFieldId?: boolean }} [options] - se true, formValues é keyed por field.id (evita sobrescrever mesmo campo em abas diferentes)
  * @returns {Record<string, unknown>} payload para PATCH /api/organizations/:orgId/bps/:bpId
  */
-export function buildBpPayloadFromForm(formFields, formValues) {
+export function buildBpPayloadFromForm(formFields, formValues, options = {}) {
   const payload = {};
+  const keyByFieldId = Boolean(options?.keyByFieldId);
 
   if (!Array.isArray(formFields) || !formValues || typeof formValues !== 'object') {
     return payload;
   }
 
   for (const field of formFields) {
-    const { campo, tabela } = field;
-    const value = formValues[campo];
+    const value = keyByFieldId ? formValues[field.id] : formValues[field.campo];
     if (value === undefined) continue;
 
+    const { campo, tabela } = field;
     const camelKey = snakeToCamel(campo);
+    const canonicalTabela = normalizeTabela(tabela) || tabela?.trim();
     const { key: pathKey, array: isArray } = getPathForTabela(tabela);
 
     let normalizedValue = value;
@@ -82,7 +139,7 @@ export function buildBpPayloadFromForm(formFields, formValues) {
       continue;
     }
 
-    if (NESTED_UNDER_FORNECEDOR.includes(tabela)) {
+    if (NESTED_UNDER_FORNECEDOR.includes(canonicalTabela)) {
       if (!payload.fornecedor) payload.fornecedor = {};
       const arrKey = pathKey;
       if (!payload.fornecedor[arrKey]) payload.fornecedor[arrKey] = [{}];
