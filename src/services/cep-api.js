@@ -45,5 +45,6 @@ export async function searchCep(cep) {
     localidade: data.localidade || '',
     uf: data.uf || '',
     cep: data.cep || digits,
+    complemento: data.complemento || '',
   };
 }

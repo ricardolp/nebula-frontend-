@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 
 import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
@@ -12,6 +12,9 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
+import InputAdornment from '@mui/material/InputAdornment';
+import IconButton from '@mui/material/IconButton';
+import CircularProgress from '@mui/material/CircularProgress';
 import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import InputLabel from '@mui/material/InputLabel';
@@ -46,6 +49,8 @@ import { getFieldWidgetConfig, WIDGET_TYPES, SELECT_OPTIONS } from 'src/sections
 import { PARTNER_FIELD_TEMPLATES } from 'src/sections/form/data/field-templates';
 import { buildBpPayloadFromForm } from 'src/sections/business-partner/data/form-values-to-bp-payload';
 import { formatCep, formatCpf, formatCnpj } from 'src/lib/masks';
+import { buildViaCepPatchByFieldId } from 'src/lib/viacep-form-fill';
+import { searchCep } from 'src/services/cep-api';
 
 function getLabelForField(campo, tabela) {
   const list = PARTNER_FIELD_TEMPLATES || [];
@@ -82,14 +87,168 @@ function getTabLabelAndIcon(tabela) {
 }
 
 // ----------------------------------------------------------------------
+// CEP + ViaCEP (preenche rua, bairro, cidade, estado se existirem no form)
+// ----------------------------------------------------------------------
+
+function resolveFieldCampo(f) {
+  return String(f?.campo ?? f?.Campo ?? '').trim();
+}
+
+function CepFieldWithViaCep({ label, value, onChange, cepField, formFieldsRef, onBulkPatch }) {
+  const [loading, setLoading] = useState(false);
+  const lastSuccessDigits = useRef('');
+  const debounceRef = useRef(null);
+  const cepFieldRef = useRef(cepField);
+  cepFieldRef.current = cepField;
+
+  const applyCep = useCallback(
+    async (digits, { silent } = {}) => {
+      if (digits.length !== 8) {
+        if (!silent) toast.error('Digite um CEP com 8 dígitos');
+        return;
+      }
+      const formFields = formFieldsRef?.current ?? [];
+      if (!formFields.length) {
+        if (!silent) toast.error('Campos do formulário ainda não carregaram. Aguarde e tente de novo.');
+        return;
+      }
+      setLoading(true);
+      try {
+        const data = await searchCep(digits);
+        lastSuccessDigits.current = digits;
+        const patch = buildViaCepPatchByFieldId(formFields, cepFieldRef.current, data);
+        const filled = Object.keys(patch).length;
+        onBulkPatch(patch);
+        const addrKeys = filled - 1;
+        if (!silent) {
+          if (addrKeys > 0) {
+            toast.success('Endereço preenchido pelo CEP');
+          } else {
+            toast.info(
+              'CEP encontrado. Inclua no formulário os campos Rua, Bairro, Cidade e Estado para preenchimento automático.'
+            );
+          }
+        } else if (addrKeys > 0) {
+          toast.success('Endereço preenchido pelo CEP');
+        }
+      } catch (e) {
+        lastSuccessDigits.current = '';
+        toast.error(e?.message || 'CEP não encontrado');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [formFieldsRef, onBulkPatch]
+  );
+
+  useEffect(() => {
+    const digits = String(value || '').replace(/\D/g, '');
+    if (digits.length < 8) {
+      lastSuccessDigits.current = '';
+      return undefined;
+    }
+    if (digits.length !== 8) return undefined;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const current = String(value || '').replace(/\D/g, '');
+      if (current !== digits || current.length !== 8) return;
+      if (lastSuccessDigits.current === digits) return;
+      applyCep(digits, { silent: true });
+    }, 400);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [value, applyCep]);
+
+  const digitsOk = String(value || '').replace(/\D/g, '').length === 8;
+
+  return (
+    <Stack spacing={1}>
+      <TextField
+        fullWidth
+        size="small"
+        label={label}
+        value={String(value)}
+        onChange={(e) => onChange(formatCep(e.target.value))}
+        onBlur={() => {
+          const d = String(value || '').replace(/\D/g, '');
+          if (d.length === 8 && lastSuccessDigits.current !== d) {
+            applyCep(d, { silent: false });
+          }
+        }}
+        placeholder="00000-000"
+        inputProps={{ maxLength: 9 }}
+        InputLabelProps={{ shrink: true }}
+        helperText="Ao sair do campo ou após 8 dígitos, buscamos o endereço (ViaCEP)"
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton
+                edge="end"
+                size="small"
+                aria-label="Buscar CEP"
+                disabled={loading || !digitsOk}
+                onClick={() => applyCep(String(value || '').replace(/\D/g, ''), { silent: false })}
+              >
+                {loading ? <CircularProgress size={20} /> : <Iconify icon="solar:magnifer-bold" width={20} />}
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
+      />
+      <Button
+        type="button"
+        size="small"
+        variant="soft"
+        color="inherit"
+        disabled={loading || !digitsOk}
+        startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <Iconify icon="solar:map-point-bold" width={18} />}
+        onClick={() => applyCep(String(value || '').replace(/\D/g, ''), { silent: false })}
+        sx={{ alignSelf: 'flex-start' }}
+      >
+        Preencher rua, bairro e cidade pelo CEP
+      </Button>
+    </Stack>
+  );
+}
+
+// ----------------------------------------------------------------------
 // Renderização de campo (tipos, máscaras e validações iguais ao BP)
 // ----------------------------------------------------------------------
 
-function StepFormField({ field, value, onChange }) {
-  const { widget, options } = getFieldWidgetConfig(field.campo);
+function isWorkflowCepField(field) {
+  const c = resolveFieldCampo(field)
+    .toLowerCase()
+    .replace(/\s/g, '');
+  if (['cep', 'codigopostal', 'postalcode', 'zip', 'zipcode', 'pstlz'].includes(c)) return true;
+  if (getFieldWidgetConfig(resolveFieldCampo(field) || field.campo).widget === WIDGET_TYPES.MASK_CEP)
+    return true;
+  const lbl = String(getLabelForField(field.campo, field.tabela) ?? '')
+    .toLowerCase()
+    .trim();
+  if (lbl === 'cep') return true;
+  return false;
+}
+
+function StepFormField({ field, value, onChange, formFieldsRef, onBulkPatch }) {
+  const campoForWidget = resolveFieldCampo(field) || field.campo;
+  const { widget, options } = getFieldWidgetConfig(campoForWidget);
   const label = getLabelForField(field.campo, field.tabela);
   const placeholder = field.tabela || '';
   const val = value ?? '';
+
+  if (typeof onBulkPatch === 'function' && isWorkflowCepField(field)) {
+    return (
+      <CepFieldWithViaCep
+        label={label}
+        value={String(val)}
+        onChange={onChange}
+        cepField={field}
+        formFieldsRef={formFieldsRef}
+        onBulkPatch={onBulkPatch}
+      />
+    );
+  }
 
   if (widget === WIDGET_TYPES.CHECKBOX) {
     return (
@@ -414,6 +573,19 @@ export function WorkflowRequestProcessDialog({
     setFormValues((prev) => ({ ...prev, [fieldId]: value }));
   }, []);
 
+  const bulkPatchFormValues = useCallback((patch) => {
+    setFormValues((prev) => {
+      const next = { ...prev };
+      Object.entries(patch).forEach(([k, v]) => {
+        next[k] = v;
+      });
+      return next;
+    });
+  }, []);
+
+  const formFieldsRef = useRef(formFields);
+  formFieldsRef.current = formFields;
+
   // Agrupa campos por tabela (aba); apenas os campos que existem no form
   const tabsFromFields = useMemo(() => {
     if (!formFields.length) return [];
@@ -560,6 +732,8 @@ export function WorkflowRequestProcessDialog({
                                       field={field}
                                       value={formValues[field.id]}
                                       onChange={(v) => updateFormValue(field.id, v)}
+                                      formFieldsRef={formFieldsRef}
+                                      onBulkPatch={bulkPatchFormValues}
                                     />
                                   </Grid>
                                 ))}

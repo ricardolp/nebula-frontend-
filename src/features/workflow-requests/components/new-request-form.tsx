@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -21,6 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { formatCep } from 'src/lib/masks'
+import { searchCep } from 'src/services/cep-api'
+import { buildViaCepPatchByCampo } from 'src/lib/viacep-form-fill'
+
+function isCepCampo(campo: string) {
+  return String(campo || '').toLowerCase().replace(/[-_]/g, '') === 'cep'
+}
 
 function getInputTypeForCampo(campo: string): string {
   const t = ALL_FIELD_TEMPLATES.find((x) => x.campo === campo)
@@ -151,8 +158,12 @@ export function NewRequestForm({ workflowId, workflows }: NewRequestFormProps) {
           <FieldInput
             key={field.id}
             field={field}
+            allFields={fields}
             value={payload[field.campo]}
             onChange={(v) => updatePayload(field.campo, v)}
+            onBulkUpdate={(patch) =>
+              setPayload((prev) => ({ ...prev, ...patch }))
+            }
           />
         ))}
       </div>
@@ -178,15 +189,31 @@ export function NewRequestForm({ workflowId, workflows }: NewRequestFormProps) {
 
 function FieldInput({
   field,
+  allFields,
   value,
   onChange,
+  onBulkUpdate,
 }: {
   field: FormField
+  allFields: FormField[]
   value: unknown
   onChange: (v: unknown) => void
+  onBulkUpdate: (patch: Record<string, unknown>) => void
 }) {
   const inputType = getInputTypeForCampo(field.campo)
   const val = value ?? ''
+
+  if (isCepCampo(field.campo)) {
+    return (
+      <CepFieldViaCep
+        field={field}
+        value={String(val)}
+        onChange={onChange}
+        allFields={allFields}
+        onBulkUpdate={onBulkUpdate}
+      />
+    )
+  }
 
   if (inputType === 'textarea') {
     return (
@@ -254,6 +281,97 @@ function FieldInput({
         onChange={(e) => onChange(e.target.value)}
         placeholder={field.tabela}
       />
+    </div>
+  )
+}
+
+function CepFieldViaCep({
+  field,
+  value,
+  onChange,
+  allFields,
+  onBulkUpdate,
+}: {
+  field: FormField
+  value: string
+  onChange: (v: unknown) => void
+  allFields: FormField[]
+  onBulkUpdate: (patch: Record<string, unknown>) => void
+}) {
+  const [loading, setLoading] = useState(false)
+  const lastOk = useRef('')
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const runFetch = useCallback(
+    async (digits: string, showToast: boolean) => {
+      if (digits.length !== 8) {
+        if (showToast) toast.error('CEP deve ter 8 dígitos')
+        return
+      }
+      setLoading(true)
+      try {
+        const data = await searchCep(digits)
+        lastOk.current = digits
+        const patch = buildViaCepPatchByCampo(allFields, data)
+        onBulkUpdate(patch)
+        if (showToast) toast.success('Endereço preenchido pelo CEP')
+      } catch (e) {
+        lastOk.current = ''
+        const msg = e instanceof Error ? e.message : 'CEP não encontrado'
+        if (showToast) toast.error(msg)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [allFields, onBulkUpdate]
+  )
+
+  useEffect(() => {
+    const digits = value.replace(/\D/g, '')
+    if (digits.length < 8) {
+      lastOk.current = ''
+      return undefined
+    }
+    if (digits.length !== 8) return undefined
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      const cur = value.replace(/\D/g, '')
+      if (cur !== digits || cur.length !== 8) return
+      if (lastOk.current === digits) return
+      void runFetch(digits, false)
+    }, 650)
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [value, runFetch])
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={field.id}>{field.campo}</Label>
+      <div className="flex gap-2">
+        <Input
+          id={field.id}
+          className="flex-1"
+          value={formatCep(value)}
+          onChange={(e) => onChange(formatCep(e.target.value))}
+          placeholder="00000-000"
+          maxLength={9}
+          disabled={loading}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="default"
+          disabled={loading || value.replace(/\D/g, '').length !== 8}
+          onClick={() => void runFetch(value.replace(/\D/g, ''), true)}
+        >
+          {loading ? <Loader2 className="size-4 animate-spin" /> : 'Buscar CEP'}
+        </Button>
+      </div>
+      <p className="text-muted-foreground text-xs">
+        Ao completar 8 dígitos, o endereço é preenchido automaticamente (rua,
+        bairro, cidade, UF) se o formulário tiver esses campos.
+      </p>
     </div>
   )
 }

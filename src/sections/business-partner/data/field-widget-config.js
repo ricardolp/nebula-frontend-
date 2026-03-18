@@ -244,7 +244,10 @@ const FIELD_WIDGET_MAP = {
  * @returns {{ widget: string, options?: Array<{ value, label }> }}
  */
 export function getFieldWidgetConfig(campo) {
-  return FIELD_WIDGET_MAP[campo] ?? { widget: WIDGET_TYPES.TEXT };
+  const key = String(campo ?? '')
+    .trim()
+    .toLowerCase();
+  return FIELD_WIDGET_MAP[key] ?? FIELD_WIDGET_MAP[campo] ?? { widget: WIDGET_TYPES.TEXT };
 }
 
 /**
